@@ -2,7 +2,7 @@
 import os
 import torch
 
-CHECKPOINT_DIR = "checkpoints"
+CHECKPOINT_DIR = "weights"
 if not os.path.exists(CHECKPOINT_DIR):
     os.makedirs(CHECKPOINT_DIR)
 
