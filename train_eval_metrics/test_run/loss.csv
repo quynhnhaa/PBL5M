@@ -1,0 +1,2 @@
+epoch,batch_idx,coord_loss,obj_loss,noobj_loss,cls_loss
+1,0,0.0,0.0,3356.684539794922,0.0
