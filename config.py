@@ -10,7 +10,7 @@ class Config:
     IMG_SIZE = 640
     NUM_CLASSES = 1
     BATCH_SIZE = 4
-    EPOCHS = 1
+    EPOCHS = 10
     LEARNING_RATE = 0.0001  
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     ANCHORS = [
