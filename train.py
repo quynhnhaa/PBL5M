@@ -222,7 +222,7 @@ def train():
     )
 
     # Tạo hoặc mở file CSV để ghi trọng số
-    weights_csv_path = os.path.join("train_eval_metrics", "widerface_run", "weights.csv")
+    weights_csv_path = os.path.join(Config.CHECKPOINT_DIR, "weights.csv") 
     os.makedirs(os.path.dirname(weights_csv_path), exist_ok=True)
     with open(weights_csv_path, mode='w', newline='') as f:
         writer = csv.writer(f)
