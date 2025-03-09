@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
             # Dự đoán
             try:
-                pred_bboxes = predict(image_path, model, conf_thres=0.3, iou_thres=0.5)
+                pred_bboxes = predict(image_path, model, conf_thres=0.2, iou_thres=0.5)
                 print(f"Detected boxes: {len(pred_bboxes)}")
                 for box in pred_bboxes:
                     print(f"Box: x1={box[0]:.2f}, y1={box[1]:.2f}, x2={box[2]:.2f}, y2={box[3]:.2f}, score={box[4]:.2f}, class={box[5]}")

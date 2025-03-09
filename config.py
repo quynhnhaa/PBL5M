@@ -9,7 +9,7 @@ if not os.path.exists(CHECKPOINT_DIR):
 class Config:
     IMG_SIZE = 640
     NUM_CLASSES = 1
-    BATCH_SIZE = 4
+    BATCH_SIZE = 32
     EPOCHS = 10
     LEARNING_RATE = 0.0001  
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
