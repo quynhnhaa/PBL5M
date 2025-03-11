@@ -1,32 +1,29 @@
-# config.py
 import os
 import torch
 
-# Thư mục lưu checkpoint
-CHECKPOINT_DIR = "/kaggle/working/weights"  # Đường dẫn trên Kaggle
+CHECKPOINT_DIR = "/kaggle/working/weights"
+CHECKPOINT_DIR = "weights"
 if not os.path.exists(CHECKPOINT_DIR):
     os.makedirs(CHECKPOINT_DIR)
 
 class Config:
-    # Đường dẫn dữ liệu (sẽ được cập nhật trong Notebook)
-    BASE_DIR = None  # Sẽ gán giá trị từ Notebook
+    # BASE_DIR = "/kaggle/input/datasetmy/data/data"
+    BASE_DIR = "data"
 
     IMG_SIZE = 640
-    NUM_CLASSES = 1  # Thay bằng số lớp thực tế của dataset
-    BATCH_SIZE = 16  # Giảm từ 32 để tránh lỗi bộ nhớ trên Kaggle
-    EPOCHS = 10
-    LEARNING_RATE = 0.0001
+    NUM_CLASSES = 1
+    BATCH_SIZE = 8
+    EPOCHS = 50
+    LEARNING_RATE = 0.001
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # Anchor và stride (giữ nguyên)
     ANCHORS = [
-        [1.25, 1.625, 2.0, 3.75, 4.125, 2.875],
-        [1.875, 3.8125, 4.0, 2.0, 3.75, 5.0],
-        [4.0, 7.0, 8.0, 4.0, 6.0, 10.0]
+        [0.0102, 0.0178, 0.0257, 0.0466, 0.0510, 0.0887],
+        [0.0938, 0.1536, 0.1303, 0.2707, 0.2502, 0.2486],
+        [0.2246, 0.4716, 0.4321, 0.4260, 0.4500, 0.7483]
     ]
     STRIDES = [8, 16, 32]
 
-    # Đường dẫn ảnh và label (sẽ được cập nhật dựa trên BASE_DIR)
     TRAIN_IMG_DIR = os.path.join(BASE_DIR, "images/train")
     TRAIN_LABEL_DIR = os.path.join(BASE_DIR, "labels/train")
     VAL_IMG_DIR = os.path.join(BASE_DIR, "images/val")

@@ -1,128 +1,3 @@
-# # train.py
-# import torch
-# import torch.optim as optim
-# from torch.utils.data import DataLoader
-# from models.yolov5m import YOLOv5m
-# from utils.dataset import YOLODataset, collate_fn
-# from utils.loss import YOLOLoss
-# from config import Config
-# import os
-# # Tạo DataLoader cho tập validation
-# val_dataset = YOLODataset(
-#     img_dir=Config.VAL_IMG_DIR,
-#     label_dir=Config.VAL_LABEL_DIR,
-#     anchors=Config.ANCHORS,
-#     img_size=Config.IMG_SIZE
-# )
-# val_loader = DataLoader(
-#     dataset=val_dataset,
-#     batch_size=Config.BATCH_SIZE,
-#     shuffle=False,
-#     collate_fn=collate_fn
-# )
-
-# def validate(val_loader, model, loss_fn):
-#     """
-#     Hàm tính loss trung bình trên tập validation.
-    
-#     Args:
-#         val_loader (DataLoader): DataLoader cho tập validation.
-#         model (nn.Module): Mô hình YOLOv5m.
-#         loss_fn (YOLOLoss): Hàm loss.
-    
-#     Returns:
-#         float: Loss trung bình trên tập validation.
-#     """
-#     model.eval()  # Chuyển mô hình sang chế độ đánh giá
-#     total_val_loss = 0.0
-#     num_batches = 0
-
-#     with torch.no_grad():  # Tắt gradient để tiết kiệm bộ nhớ
-#         for images, targets in val_loader:
-#             images = images.to(Config.DEVICE)
-#             targets = [target.to(Config.DEVICE) for target in targets]
-
-#             # Forward pass
-#             preds = model(images)  # Dự đoán từ mô hình
-#             val_loss = loss_fn(preds, targets, img_size=Config.IMG_SIZE)  # Tính loss
-
-#             total_val_loss += val_loss.item()
-#             num_batches += 1
-
-#     avg_val_loss = total_val_loss / num_batches
-#     print(f"Validation Loss: {avg_val_loss:.4f}")
-#     return avg_val_loss
-
-# def train():
-#     model = YOLOv5m(num_classes=Config.NUM_CLASSES).to(Config.DEVICE)
-#     optimizer = optim.Adam(model.parameters(), lr=Config.LEARNING_RATE)
-
-#     train_dataset = YOLODataset(
-#         img_dir=Config.TRAIN_IMG_DIR,
-#         label_dir=Config.TRAIN_LABEL_DIR,
-#         anchors=Config.ANCHORS,
-#         img_size=Config.IMG_SIZE
-#     )
-
-#     train_loader = DataLoader(
-#         dataset=train_dataset,
-#         batch_size=Config.BATCH_SIZE,
-#         shuffle=True,
-#         collate_fn=collate_fn
-#     )
-
-#     loss_fn = YOLOLoss(
-#         num_classes=Config.NUM_CLASSES,
-#         anchors=Config.ANCHORS,
-#         strides=Config.STRIDES,
-#         device=Config.DEVICE,
-#         save_logs=True,
-#         filename="widerface_run"
-#     )
-
-#     def train_epoch(epoch):
-#         model.train()
-#         total_loss = 0.0
-
-#         for batch_idx, (images, targets) in enumerate(train_loader):
-#             images = images.to(Config.DEVICE)
-#             targets = [target.to(Config.DEVICE) for target in targets]
-
-#             preds = model(images)
-#             loss = loss_fn(preds, targets, img_size=Config.IMG_SIZE, batch_idx=batch_idx, epoch=epoch)
-
-#             optimizer.zero_grad()
-#             loss.backward()
-#             optimizer.step()
-
-#             total_loss += loss.item()
-
-#             if batch_idx % 10 == 0:
-#                 print(f"Epoch [{epoch+1}/{Config.EPOCHS}], Step [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
-
-#         avg_loss = total_loss / len(train_loader)
-#         print(f"Epoch [{epoch+1}/{Config.EPOCHS}], Average Loss: {avg_loss:.4f}")
-#         return avg_loss
-
-#     best_loss = float("inf")
-#     for epoch in range(Config.EPOCHS):
-#         avg_loss = train_epoch(epoch)
-#         # Thêm validation sau mỗi epoch
-#         avg_val_loss = validate(val_loader, model, loss_fn)
-
-#         if avg_val_loss < best_loss:
-#             best_loss = avg_val_loss
-#             torch.save(model.state_dict(), os.path.join(Config.CHECKPOINT_DIR, "best_model.pth"))
-#             print(f"Saved best model with validation loss: {best_loss:.4f}")
-
-#         model_save_path = Config.MODEL_SAVE_PATH.format(epoch=epoch + 1)
-#         torch.save(model.state_dict(), model_save_path)
-#         print(f"Saved model to {model_save_path}")
-
-# if __name__ == "__main__":
-#     train()
-# train.py
-# train.py
 import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -171,7 +46,7 @@ def validate(val_loader, model, loss_fn):
                 anchors=Config.ANCHORS,
                 strides=Config.STRIDES,
                 img_size=Config.IMG_SIZE,
-                conf_thres=0.3,
+                conf_thres=0.5,  # Tăng từ 0.3
                 iou_thres=0.5
             )
             all_pred_bboxes.extend(pred_bboxes)
@@ -182,6 +57,10 @@ def validate(val_loader, model, loss_fn):
 
     avg_val_loss = total_val_loss / num_batches
     print(f"Validation Loss: {avg_val_loss:.4f}")
+
+    # Chuyển tất cả bounding boxes về cùng device trước khi tính mAP
+    all_pred_bboxes = [bbox.to(Config.DEVICE) if isinstance(bbox, torch.Tensor) else bbox for bbox in all_pred_bboxes]
+    all_true_bboxes = [bbox.to(Config.DEVICE) if isinstance(bbox, torch.Tensor) else bbox for bbox in all_true_bboxes]
 
     mAP = calculate_map(
         pred_bboxes=all_pred_bboxes,
@@ -222,7 +101,7 @@ def train():
     )
 
     # Tạo hoặc mở file CSV để ghi trọng số
-    weights_csv_path = os.path.join(Config.CHECKPOINT_DIR, "weights.csv") 
+    weights_csv_path = os.path.join(Config.CHECKPOINT_DIR, "weights.csv")
     os.makedirs(os.path.dirname(weights_csv_path), exist_ok=True)
     with open(weights_csv_path, mode='w', newline='') as f:
         writer = csv.writer(f)
@@ -260,27 +139,22 @@ def train():
             total_loss += loss.item()
 
             # Lấy trọng số từ các lớp
-            # 1. Backone - Stem
             stem_weight = model.backbone.stem[0].weight.data.cpu().numpy()
             weights_stats["stem_mean"].append(np.mean(np.abs(stem_weight)))
             weights_stats["stem_std"].append(np.std(stem_weight))
 
-            # 2. Backbone - Stage3
             stage3_weight = model.backbone.stage3[0].weight.data.cpu().numpy()
             weights_stats["stage3_mean"].append(np.mean(np.abs(stage3_weight)))
             weights_stats["stage3_std"].append(np.std(stage3_weight))
 
-            # 3. Backbone - Stage5
             stage5_weight = model.backbone.stage5[0].weight.data.cpu().numpy()
             weights_stats["stage5_mean"].append(np.mean(np.abs(stage5_weight)))
             weights_stats["stage5_std"].append(np.std(stage5_weight))
 
-            # 4. Neck - conv_p5_to_p4
             neck_p5_to_p4_weight = model.neck.conv_p5_to_p4[0].weight.data.cpu().numpy()
             weights_stats["neck_p5_to_p4_mean"].append(np.mean(np.abs(neck_p5_to_p4_weight)))
             weights_stats["neck_p5_to_p4_std"].append(np.std(neck_p5_to_p4_weight))
 
-            # 5. Head - heads[0]
             head_p3_weight = model.head.heads[0][0].weight.data.cpu().numpy()
             weights_stats["head_p3_mean"].append(np.mean(np.abs(head_p3_weight)))
             weights_stats["head_p3_std"].append(np.std(head_p3_weight))
@@ -291,7 +165,6 @@ def train():
         avg_loss = total_loss / len(train_loader)
         print(f"Epoch [{epoch+1}/{Config.EPOCHS}], Average Loss: {avg_loss:.4f}")
 
-        # Tính trung bình qua các batch
         return (avg_loss,
                 np.mean(weights_stats["stem_mean"]), np.mean(weights_stats["stem_std"]),
                 np.mean(weights_stats["stage3_mean"]), np.mean(weights_stats["stage3_std"]),
@@ -307,7 +180,6 @@ def train():
     for epoch in range(Config.EPOCHS):
         avg_train_loss, stem_mean, stem_std, stage3_mean, stage3_std, stage5_mean, stage5_std, neck_p5_to_p4_mean, neck_p5_to_p4_std, head_p3_mean, head_p3_std = train_epoch(epoch)
 
-        # Ghi trọng số vào CSV
         with open(weights_csv_path, mode='a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([

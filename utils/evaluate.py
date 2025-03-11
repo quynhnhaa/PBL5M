@@ -1,6 +1,7 @@
 import torch
 import torchvision
 from config import Config
+
 def calculate_map(pred_bboxes, true_bboxes, iou_thres=0.5, num_classes=1):
     """
     Tính mAP trên tập validation.
@@ -45,8 +46,8 @@ def calculate_map(pred_bboxes, true_bboxes, iou_thres=0.5, num_classes=1):
 
         # Tạo danh sách nhãn (1: True Positive, 0: False Positive)
         detections = sorted(detections, key=lambda x: x[1], reverse=True)  # Sắp xếp theo score
-        TP = torch.zeros(len(detections))
-        FP = torch.zeros(len(detections))
+        TP = torch.zeros(len(detections), device=Config.DEVICE)
+        FP = torch.zeros(len(detections), device=Config.DEVICE)
         total_true_bboxes = len(ground_truths)
 
         # Tính IoU giữa dự đoán và ground truth
@@ -58,16 +59,18 @@ def calculate_map(pred_bboxes, true_bboxes, iou_thres=0.5, num_classes=1):
                 FP[det_idx] = 1
                 continue
 
+            # Chuyển gt_bboxes và pred_box sang tensor trên Config.DEVICE
             gt_bboxes = torch.tensor(gt_bboxes, device=Config.DEVICE)
             pred_box = torch.tensor(detection[2:6], device=Config.DEVICE).unsqueeze(0)
 
             # Chuyển ground truth thành x1, y1, x2, y2
-            gt_boxes_xyxy = torch.zeros_like(gt_bboxes)
+            gt_boxes_xyxy = torch.zeros_like(gt_bboxes, device=Config.DEVICE)
             gt_boxes_xyxy[..., 0] = gt_bboxes[..., 0] * Config.IMG_SIZE - gt_bboxes[..., 2] * Config.IMG_SIZE / 2
             gt_boxes_xyxy[..., 1] = gt_bboxes[..., 1] * Config.IMG_SIZE - gt_bboxes[..., 3] * Config.IMG_SIZE / 2
             gt_boxes_xyxy[..., 2] = gt_bboxes[..., 0] * Config.IMG_SIZE + gt_bboxes[..., 2] * Config.IMG_SIZE / 2
             gt_boxes_xyxy[..., 3] = gt_bboxes[..., 1] * Config.IMG_SIZE + gt_bboxes[..., 3] * Config.IMG_SIZE / 2
 
+            # Tính IoU
             ious = torchvision.ops.box_iou(pred_box, gt_boxes_xyxy)
             max_iou, max_idx = ious.max(dim=1)
 
@@ -91,7 +94,7 @@ def calculate_map(pred_bboxes, true_bboxes, iou_thres=0.5, num_classes=1):
         precision = torch.cat([torch.tensor([0.0], device=Config.DEVICE), precision, torch.tensor([0.0], device=Config.DEVICE)])
 
         ap = 0.0
-        for t in torch.linspace(0, 1, 11):
+        for t in torch.linspace(0, 1, 11, device=Config.DEVICE):
             mask = recall >= t
             p = precision[mask].max() if mask.any() else 0.0
             ap += p / 11
